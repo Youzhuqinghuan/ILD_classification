@@ -1,11 +1,26 @@
 # MedSAM
-This is the official repository for MedSAM: Segment Anything in Medical Images.
 
-## News
+## Fine Tuning
 
-- 2024.01.15: Welcome to join [CVPR 2024 Challenge: MedSAM on Laptop](https://www.codabench.org/competitions/1847/)
-- 2024.01.15: Release [LiteMedSAM](https://github.com/bowang-lab/MedSAM/blob/LiteMedSAM/README.md) and [3D Slicer Plugin](https://github.com/bowang-lab/MedSAMSlicer), 10x faster than MedSAM! 
+### Data preprocessing
+Install SimpleITK, scikit-image: `pip install SimpleITK`, `pip install scikit-image`
+```bash
+python preprocess.py
+```
 
+- 
+- split dataset: 80% for training and 20% for testing
+- adjust CT scans to [soft tissue](https://radiopaedia.org/articles/windowing-ct) window level (40) and width (400)
+- max-min normalization
+- resample image size to `1024x1024`
+- save the pre-processed images and labels as `npy` files
+
+### Training on one GPU
+```bash
+python continue_train.py        # Binary Classification
+python multi_continue_train.py  # Multiclass Classification
+```
+Note: Download the [model checkpoint](https://drive.google.com/drive/folders/1ETWmi4AiniJeWOt6HAsYgTjYv_fkgzoN?usp=drive_link) and place it at e.g., `work_dir/MedSAM/medsam_vit_b`, Download [SAM checkpoint](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth) and place it at `work_dir/SAM/sam_vit_b_01ec64.pth` .
 
 ## Installation
 1. Create a virtual environment `conda create -n medsam python=3.10 -y` and activate it `conda activate medsam`

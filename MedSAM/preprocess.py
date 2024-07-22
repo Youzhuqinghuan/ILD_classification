@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # %% import packages
+import argparse
 import numpy as np
 import SimpleITK as sitk
 import os
@@ -7,18 +8,27 @@ from skimage import transform
 from tqdm import tqdm
 
 
+# Set up argument parser
+parser = argparse.ArgumentParser(description='Convert NIfTI images to NPZ files.')
+parser.add_argument('--modality', type=str, default='CT', help='Modality type (default: CT)')
+parser.add_argument('--nii_path', type=str, default='/jizhicfs/chengpenghu/med_datasets/Dataset503_ILD/imagesTr',
+                    help='Path to the NIfTI images')
+parser.add_argument('--gt_path', type=str, default='/jizhicfs/chengpenghu/med_datasets/Dataset503_ILD/labelsTr',
+                    help='Path to the ground truth')
+parser.add_argument('--npy_path', type=str, default='/jizhicfs/chengpenghu/med_datasets/data_preprocessed/npy/BIN_CT',
+                    help='Path to save the NPZ files')
+
+args = parser.parse_args()
+
 # Convert nii image to npz files, including original image and corresponding masks
-# modality = "CT"
-modality = "BIN_CT"
+modality = args.modality
 img_name_suffix = "_0000.nii.gz"
 gt_name_suffix = ".nii.gz"
 prefix = modality + "_"
 
-# nii_path = "/jizhicfs/chengpenghu/med_datasets/ILD/imagesTr"  # Path to the nii images
-# gt_path = "/jizhicfs/chengpenghu/med_datasets/ILD/labelsTr"  # Path to the ground truth
-nii_path = "/jizhicfs/chengpenghu/med_datasets/Dataset503_ILD/imagesTr"  # Path to the nii images
-gt_path = "/jizhicfs/chengpenghu/med_datasets/Dataset503_ILD/labelsTr"  # Path to the ground truth
-npy_path = "/jizhicfs/chengpenghu/med_datasets/data_preprocessed/npy/" + prefix[:-1]
+nii_path = args.nii_path  # Path to the nii images
+gt_path = args.gt_path  # Path to the ground truth
+npy_path = args.npy_path  # Path to save the npz files
 os.makedirs(os.path.join(npy_path, "gts"), exist_ok=True)
 os.makedirs(os.path.join(npy_path, "imgs"), exist_ok=True)
 
