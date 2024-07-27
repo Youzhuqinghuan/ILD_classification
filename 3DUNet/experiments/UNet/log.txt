@@ -1,0 +1,1 @@
+Epoch,Train_Loss,Train_Dice,Val_Loss,Val_Dice
