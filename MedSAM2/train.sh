@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # 定义变量
-IMG_PATH="/jizhicfs/chengpenghu/meddataset/ILD/imagesTr"
+IMG_PATH="/home/huchengpeng/MedSAM/datasets/ILD/imagesTr"
 IMG_NAME_SUFFIX="_0000.nii.gz"
-GT_PATH="/jizhicfs/chengpenghu/meddataset/ILD/labelsTr"
+GT_PATH="/home/huchengpeng/MedSAM/datasets/ILD/labelsTr"
 GT_NAME_SUFFIX=".nii.gz"
-OUTPUT_PATH="/jizhicfs/chengpenghu/meddataset/data"
+OUTPUT_PATH="./data"
 NUM_WORKERS=4
 MODALITY="CT"
 ANATOMY="ILD"
@@ -13,18 +13,27 @@ WINDOW_LEVEL=40
 WINDOW_WIDTH=400
 SAVE_NII="--save_nii"
 
-NPZ_DIR="/jizhicfs/chengpenghu/meddataset/data/npz_train/CT_ILD"
-NPY_DIR="/jizhicfs/chengpenghu/meddataset/data/npy"
+NPZ_DIR="./data/npz_train/CT_ILD"
+NPY_DIR="./data/npy"
 
 TASK_NAME="MedSAM2-Tiny-ILD"
 WORK_DIR="./work_dir"
-BATCH_SIZE=16
+EPOCHS=500
+BATCH_SIZE=8
 PRETRAIN_MODEL_PATH="./checkpoints/sam2_hiera_tiny.pt"
 MODEL_CFG="sam2_hiera_t.yaml"
 
-# 继续训练的模型路径
-RESUME=false  # 将此值设置为true以继续训练
-RESUME_PATH="./work_dir/MedSAM2-Tiny-Flare22-2024-08-22-07-00/medsam2_model_latest.pth"
+RESUME=true  # 将此值设置为true以继续训练
+RESUME_PATH="./work_dir/MedSAM2-Tiny-ILD-20240822-2156/medsam_model_latest.pth"
+
+TRAINORINFER=2 # Train: 1, Inference: 2 
+
+USEMEDSAM=true
+
+NPZ_TEST_DIR="./data/npz_test/CT_ILD"
+PRED_SAVE_DIR="./segs/medsam2"
+MEDSAM2CHECKPOINT="./work_dir/MedSAM2-Tiny-ILD-20240822-2210/medsam_model_best.pth"
+EVALPATH="./infer_eval"
 
 
 if [ ! -e ${OUTPUT_PATH}/.ILD.npz.done ]; then
@@ -55,23 +64,58 @@ fi
 
 echo "Npz to Npy Completed!"
 
-echo "Begin Training!"
+if [ "$TRAINORINFER" = 1 ]; then
 
-if [ "$RESUME" = true ]; then
-    python finetune_sam2_img.py \
-        -i $NPY_DIR \
-        -task_name $TASK_NAME \
-        -work_dir $WORK_DIR \
-        -batch_size $BATCH_SIZE \
-        -pretrain_model_path $PRETRAIN_MODEL_PATH \
-        -model_cfg $MODEL_CFG \
-        -resume $RESUME_PATH
+    echo "Begin Training!"
+
+    if [ "$RESUME" = true ]; then
+        python finetune_sam2_img.py \
+            -i $NPY_DIR \
+            -task_name $TASK_NAME \
+            -work_dir $WORK_DIR \
+            -num_epochs $EPOCHS \
+            -batch_size $BATCH_SIZE \
+            -pretrain_model_path $PRETRAIN_MODEL_PATH \
+            -model_cfg $MODEL_CFG \
+            -resume $RESUME_PATH
+    else
+        python finetune_sam2_img.py \
+            -i $NPY_DIR \
+            -task_name $TASK_NAME \
+            -work_dir $WORK_DIR \
+            -num_epochs $EPOCHS \
+            -batch_size $BATCH_SIZE \
+            -pretrain_model_path $PRETRAIN_MODEL_PATH \
+            -model_cfg $MODEL_CFG
+    fi
 else
-    python finetune_sam2_img.py \
-        -i $NPY_DIR \
-        -task_name $TASK_NAME \
-        -work_dir $WORK_DIR \
-        -batch_size $BATCH_SIZE \
-        -pretrain_model_path $PRETRAIN_MODEL_PATH \
-        -model_cfg $MODEL_CFG
+
+    echo "Begin Inference!"
+
+    if [ "$USEMEDSAM" = true ]; then
+        python infer_medsam2_ILD.py \
+            -data_root $NPZ_TEST_DIR \
+            -pred_save_dir $PRED_SAVE_DIR \
+            -sam2_checkpoint $PRETRAIN_MODEL_PATH \
+            -medsam2_checkpoint $MEDSAM2CHECKPOINT \
+            -model_cfg $MODEL_CFG \
+            -bbox_shift 5 \
+            -num_workers 10 \
+            --visualize ## Save segmentation, ground truth volume, and images in .nii.gz for visualization
+    else
+        python infer_sam2_ILD.py \
+            -data_root $NPZ_TEST_DIR \
+            -pred_save_dir $PRED_SAVE_DIR \
+            -sam2_checkpoint $MEDSAM2CHECKPOINT \
+            -model_cfg $MODEL_CFG \
+            -bbox_shift 5 \
+            -num_workers 10
+    fi
+
+    echo "Begin Evaluation!"
+
+    python ./metrics/compute_metrics_ILD.py \
+        -s ./${PRED_SAVE_DIR} \
+        -g ./${NPZ_TEST_DIR} \
+        -csv_dir $EVALPATH
 fi

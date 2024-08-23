@@ -146,7 +146,7 @@ parser.add_argument("-pretrain_model_path",
 parser.add_argument("-work_dir", type=str, default="./work_dir")
 # train
 parser.add_argument("-num_epochs", type=int, default=1000)
-parser.add_argument("-batch_size", type=int, default=16)
+parser.add_argument("-batch_size", type=int, default=8)
 parser.add_argument("-bbox_shift", type=int, default=5)
 parser.add_argument("-num_workers", type=int, default=0)
 # Optimizer parameters
