@@ -130,10 +130,10 @@ class NpyDataset(Dataset):
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-i",
-    "--tr_npy_path",
+    "--npy_path",
     type=str,
     default=None,
-    help="path to training npy files; two subfolders: gts and imgs",
+    help="path to training and validation npy files; two subfolders: gts and imgs",
 )
 parser.add_argument("-task_name", type=str, default="MedSAM2-Tiny-Flare22")
 parser.add_argument(
@@ -166,8 +166,11 @@ parser.add_argument(
 parser.add_argument("-device", type=str, default="cuda:0")
 args, unknown = parser.parse_known_args()
 
+tr_npy_path = join(args.npy_path, "train")
+va_npy_path = join(args.npy_path, "valid")
+
 # sanity test of dataset class
-tr_dataset = NpyDataset(args.tr_npy_path, bbox_shift=args.bbox_shift)
+tr_dataset = NpyDataset(tr_npy_path, bbox_shift=args.bbox_shift)
 tr_dataloader = DataLoader(tr_dataset, batch_size=args.batch_size, shuffle=True)
 images, gts, bboxes, names_temp = next(iter(tr_dataloader))
 idx = random.randint(0, images.shape[0]-1)
@@ -275,6 +278,23 @@ class MedSAM2(nn.Module):
 
         return _features
 
+def validate(model, val_dataloader, device):
+    model.eval()
+    seg_loss = monai.losses.DiceLoss(sigmoid=True, squared_pred=True, reduction="mean")
+    ce_loss = nn.BCEWithLogitsLoss(reduction="mean")
+    val_loss = 0
+    with torch.no_grad():
+        for step, (image, gt2D, boxes, _) in enumerate(tqdm(val_dataloader)):
+            boxes_np = boxes.detach().cpu().numpy()
+            image, gt2D = image.to(device), gt2D.to(device)
+
+            medsam_pred = model(image, boxes_np)
+            loss = seg_loss(medsam_pred, gt2D) + ce_loss(medsam_pred, gt2D.float())
+            val_loss += loss.item()
+    
+    val_loss /= step
+    return val_loss
+
 
 # %%
 def main():
@@ -314,12 +334,24 @@ def main():
 
     num_epochs = args.num_epochs
     losses = []
+    val_losses = []
     best_loss = 1e10
-    train_dataset = NpyDataset(args.tr_npy_path, bbox_shift=args.bbox_shift)
+    train_dataset = NpyDataset(tr_npy_path, bbox_shift=args.bbox_shift)
 
     print("Number of training samples: ", len(train_dataset))
     train_dataloader = DataLoader(
         train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        pin_memory=True,
+    )
+
+    val_dataset = NpyDataset(va_npy_path, bbox_shift=args.bbox_shift)
+    print("Number of validation samples: ", len(val_dataset))
+
+    val_dataloader = DataLoader(
+        val_dataset,
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=args.num_workers,
@@ -356,6 +388,12 @@ def main():
         print(
             f'Time: {datetime.now().strftime("%Y%m%d-%H%M")}, Epoch: {epoch}, Loss: {epoch_loss}'
         )
+        
+        ## validation step
+        val_loss = validate(medsam_model, val_dataloader, device)
+        print(f'Validation Loss: {val_loss}')
+        val_losses.append(val_loss)
+        
         ## save the latest model
         checkpoint = {
             "model": medsam_model.state_dict(),
@@ -364,8 +402,8 @@ def main():
         }
         torch.save(checkpoint, join(model_save_path, "medsam_model_latest.pth"))
         ## save the best model
-        if epoch_loss < best_loss:
-            best_loss = epoch_loss
+        if val_loss < best_loss:
+            best_loss = val_loss
             checkpoint = {
                 "model": medsam_model.state_dict(),
                 "optimizer": optimizer.state_dict(),
@@ -374,12 +412,16 @@ def main():
             torch.save(checkpoint, join(model_save_path, "medsam_model_best.pth"))
 
         # %% plot loss
-        plt.plot(losses)
+        plt.plot(losses, label='Training Loss')
+        plt.plot(val_losses, label='Validation Loss')
+
         plt.title("Dice + Cross Entropy Loss")
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
-        plt.savefig(join(model_save_path, args.task_name + "train_loss.png"))
+        plt.legend()
+        plt.savefig(join(model_save_path, args.task_name + "_loss.png"))
         plt.close()
+
 
 
 if __name__ == "__main__":

@@ -12,6 +12,9 @@
 data/
 work_dir/
 checkpoints/
+segs/
+visualize/
+infer_eval/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

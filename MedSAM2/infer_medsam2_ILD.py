@@ -11,6 +11,8 @@ import cv2
 from skimage import measure
 from tqdm import tqdm
 import argparse
+import pickle
+import os
 
 from sam2.build_sam import build_sam2
 from sam2.utils.transforms import SAM2Transforms
@@ -330,19 +332,33 @@ def main(name):
     )
 
     if visualize:
-        for label_id in label_ids:
-            seg_sitk = sitk.GetImageFromArray(segs_dict[label_id])
-            seg_sitk.SetSpacing(npz['spacing'])
-            sitk.WriteImage(seg_sitk, join(pred_save_dir, name.replace('.npz', f'_{label_dict[label_id]}.nii.gz')))
+        # for label_id in label_ids:
+        #     seg_sitk = sitk.GetImageFromArray(segs_dict[label_id])
+        #     seg_sitk.SetSpacing(npz['spacing'])
+        #     sitk.WriteImage(seg_sitk, join(pred_save_dir, name.replace('.npz', f'_{label_dict[label_id]}.nii.gz')))
 
     
-        img_sitk = sitk.GetImageFromArray(img_3D)
-        img_sitk.SetSpacing(npz['spacing'])
-        sitk.WriteImage(img_sitk, join(pred_save_dir, name.replace('.npz', '_0000.nii.gz')))
+        # img_sitk = sitk.GetImageFromArray(img_3D)
+        # img_sitk.SetSpacing(npz['spacing'])
+        # sitk.WriteImage(img_sitk, join(pred_save_dir, name.replace('.npz', '_0000.nii.gz')))
 
-        gts_sitk = sitk.GetImageFromArray(gt_3D)
-        gts_sitk.SetSpacing(npz['spacing'])
-        sitk.WriteImage(gts_sitk, join(pred_save_dir, name.replace('.npz', '_gt.nii.gz')))
+        # gts_sitk = sitk.GetImageFromArray(gt_3D)
+        # gts_sitk.SetSpacing(npz['spacing'])
+        # sitk.WriteImage(gts_sitk, join(pred_save_dir, name.replace('.npz', '_gt.nii.gz')))
+        
+        origin_slices = "./visualize/test_slice_indices.pkl"
+        with open(origin_slices, 'rb') as f:
+            test_slice_indices = pickle.load(f)
+        basename = name.replace('.npz', '.nii.gz')
+        if basename in test_slice_indices:
+            z_index = test_slice_indices[basename]['slice_indices']
+            dimensions = test_slice_indices[basename]['dimensions']
+            restored_gt = np.zeros(dimensions, dtype=np.uint8)
+            assert len(z_index) == gt_3D.shape[0], "The number of slices in `gt_3D` does not match the length of `z_index`."
+            restored_gt[z_index, :, :] = gt_3D
+            gts_sitk = sitk.GetImageFromArray(restored_gt)
+            gts_sitk.SetSpacing(npz['spacing'])
+            sitk.WriteImage(gts_sitk, join(pred_save_dir, name.replace('.npz', '_gt.nii.gz')))
 
 
 if __name__ == '__main__':

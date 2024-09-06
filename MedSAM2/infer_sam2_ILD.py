@@ -24,18 +24,11 @@ torch.cuda.manual_seed(2024)
 np.random.seed(2024)
 
 label_dict = {
-    1: 'Liver',
-    2: 'Right Kidney',
-    3: 'Spleen',
-    4: 'Pancreas',
-    5: 'Aorta',
-    6: 'Inferior Vena Cava', # IVC
-    7: 'Right Adrenal Gland', # RAG
-    8: 'Left Adrenal Gland', # LAG
-    9: 'Gallbladder',
-    10: 'Esophagus',
-    11: 'Stomach',
-    13: 'Left Kidney'
+    1: 'ILD1',
+    2: 'ILD2',
+    3: 'ILD3',
+    4: 'ILD4',
+    5: 'ILD5',
 }
 
 class SAM2Wrapper(nn.Module):

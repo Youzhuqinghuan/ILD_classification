@@ -27,7 +27,8 @@ def compute_multi_class_dsc(gt, npz_seg):
         else:
             seg_i = np.zeros_like(gt_i)
         if np.sum(gt_i)==0 and np.sum(seg_i)==0:
-            dsc[label_dict[i]] = 1
+            # dsc[label_dict[i]] = 1
+            dsc[label_dict[i]] = np.nan
         elif np.sum(gt_i)==0 and np.sum(seg_i)>0:
             dsc[label_dict[i]] = 0
         else:
@@ -45,7 +46,8 @@ def compute_multi_class_nsd(gt, npz_seg, spacing, tolerance=2.0):
         else:
             seg_i = np.zeros_like(gt_i)
         if np.sum(gt_i)==0 and np.sum(seg_i)==0:
-            nsd[label_dict[i]] = 1
+            # nsd[label_dict[i]] = 1
+            nsd[label_dict[i]] = np.nan
         elif np.sum(gt_i)==0 and np.sum(seg_i)>0:
             nsd[label_dict[i]] = 0
         else:
