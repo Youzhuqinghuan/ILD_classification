@@ -52,10 +52,7 @@ prefix = modality + "_" + anatomy + "_"
 nii_path = args.img_path  # path to the nii images
 gt_path = args.gt_path  # path to the ground truth
 output_path = args.output_path  # path to save the preprocessed files
-npz_tr_path = join(output_path, "npz_train", prefix[:-1])
-os.makedirs(npz_tr_path, exist_ok=True)
-npz_va_path = join(output_path, "npz_valid", prefix[:-1])
-os.makedirs(npz_va_path, exist_ok=True)
+
 npz_ts_path = join(output_path, "npz_test", prefix[:-1])
 os.makedirs(npz_ts_path, exist_ok=True)
 
@@ -210,42 +207,16 @@ def record_test_slice_indices(names, output_file):
         pickle.dump(test_slice_indices, f)
 
 if __name__ == "__main__":
-    total_names = len(names)
-    train_size = int(total_names * 0.7)
-    val_size = int(total_names * 0.1)
-    test_size = total_names - train_size - val_size
+    ts_names = names
 
-    # tr_names = names[:train_size]
-    # va_names = names[train_size:train_size + val_size]
-    # ts_names = names[train_size + val_size:]
-    
-    # Hard code
-    va_names = ['CT_UIP21.nii.gz', 'CT_UIP8.nii.gz', 'CT_NSIP11.nii.gz']
-    ts_names = ['CT_NSIP12.nii.gz', 'CT_NSIP10.nii.gz', 'CT_NSIP16.nii.gz', 'CT_UIP8.nii.gz', 'CT_UIP4.nii.gz', 'CT_NSIP18.nii.gz', 'CT_UIP5.nii.gz', 'CT_UIP1.nii.gz', 'CT_UIP18.nii.gz']
-    tr_names = [
-        name
-        for name in names
-        if name not in va_names and name not in ts_names
-                ]
-
-    preprocess_tr = partial(preprocess, npz_path=npz_tr_path)
-    preprocess_va = partial(preprocess, npz_path=npz_va_path)
     preprocess_ts = partial(preprocess, npz_path=npz_ts_path)
 
     with mp.Pool(num_workers) as p:
-        with tqdm(total=len(tr_names)) as pbar:
-            pbar.set_description("Preprocessing training data")
-            for i, _ in tqdm(enumerate(p.imap_unordered(preprocess_tr, tr_names))):
-                pbar.update()
-        with tqdm(total=len(va_names)) as pbar:
-            pbar.set_description("Preprocessing validation data")
-            for i, _ in tqdm(enumerate(p.imap_unordered(preprocess_va, va_names))):
-                pbar.update()
         with tqdm(total=len(ts_names)) as pbar:
             pbar.set_description("Preprocessing testing data")
             for i, _ in tqdm(enumerate(p.imap_unordered(preprocess_ts, ts_names))):
                 pbar.update()
 
-    output_file = "./visualize/test_slice_indices.pkl"
+    output_file = "./visualize/test_slice_indices_infer.pkl"
     record_test_slice_indices(ts_names, output_file)
     print(f"Test slice indices have been recorded in {output_file}.")
