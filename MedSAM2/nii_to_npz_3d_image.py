@@ -40,7 +40,6 @@ parser.add_argument("-window_width", type=int, default=400,
 parser.add_argument("--save_nii", action="store_true",
                     help="Save the image and ground truth as nii files for sanity check; they can be removed")
 parser.add_argument("-visualize", type=str, default="./visualize/test_slice_indices.pkl")
-
 args = parser.parse_args()
 
 # convert nii image to npz files, including original image and corresponding masks
@@ -63,7 +62,7 @@ os.makedirs(npz_ts_path, exist_ok=True)
 num_workers = args.num_workers
 
 names = sorted(os.listdir(gt_path))
-print(f"ori \# files {len(names)=}")
+print(f"ori files {len(names)=}")
 names = [
     name
     for name in names
@@ -221,13 +220,9 @@ if __name__ == "__main__":
     # ts_names = names[train_size + val_size:]
     
     # Hard code
-    va_names = ['CT_UIP21.nii.gz', 'CT_UIP8.nii.gz', 'CT_NSIP11.nii.gz']
-    ts_names = ['CT_NSIP12.nii.gz', 'CT_NSIP10.nii.gz', 'CT_NSIP16.nii.gz', 'CT_UIP8.nii.gz', 'CT_UIP4.nii.gz', 'CT_NSIP18.nii.gz', 'CT_UIP5.nii.gz', 'CT_UIP1.nii.gz', 'CT_UIP18.nii.gz']
-    tr_names = [
-        name
-        for name in names
-        if name not in va_names and name not in ts_names
-                ]
+    tr_names = ['CT_L2.nii.gz', 'CT_L1.nii.gz']
+    ts_names = ['CT_L3.nii.gz']
+    va_names = ['CT_L4.nii.gz']
 
     preprocess_tr = partial(preprocess, npz_path=npz_tr_path)
     preprocess_va = partial(preprocess, npz_path=npz_va_path)

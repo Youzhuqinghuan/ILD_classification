@@ -26,11 +26,7 @@ torch.cuda.manual_seed(2024)
 np.random.seed(2024)
 
 label_dict = {
-    1: 'ILD1',
-    2: 'ILD2',
-    3: 'ILD3',
-    4: 'ILD4',
-    5: 'ILD5',
+    255: 'Lung'
 }
 
 class MedSAM2(nn.Module):
