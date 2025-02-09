@@ -27,10 +27,10 @@ np.random.seed(2024)
 
 label_dict = {
     1: 'ILD1',
-    2: 'ILD2',
-    3: 'ILD3',
+    2: 'Reticulation',
+    3: 'GGO-reticulation',
     4: 'ILD4',
-    5: 'ILD5',
+    5: 'Honeycombing',
 }
 
 class MedSAM2(nn.Module):

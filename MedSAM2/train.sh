@@ -114,9 +114,9 @@ else
             -vis $VISUALIZE_PKL \
             --visualize ## Save segmentation, ground truth volume, and images in .nii.gz for visualization
 
-        python ./metrics/compute_metrics_ILD.py \
+        python ./metrics/compute_metrics_ILD_all.py \
         -s ./${PRED_SAVE_DIR} \
-        -g ./${NPZ_TEST_DIR} \
+        -g ${GT_PATH} \
         -csv_dir $EVALPATH
     else
         python infer_sam2_ILD.py \
@@ -127,9 +127,9 @@ else
             -bbox_shift 5 \
             -num_workers 10
 
-        python ./metrics/compute_metrics_ILD.py \
+        python ./metrics/compute_metrics_ILD_all.py \
         -s ./${PRED_SAVE_DIR_SAM} \
-        -g ./${NPZ_TEST_DIR} \
+        -g ${GT_PATH} \
         -csv_dir $EVALPATH_SAM
     fi
 fi
